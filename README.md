@@ -1,6 +1,6 @@
 ## Empirical Dynamic Modeling (EDM)
 ---
-A Pure Python implementation of EDM tools intended for code and algorithm development.  Production EDM tools are in cppEDM (https://github.com/SugiharaLab/cppEDM).  The Python EDM package provides a Pandas DataFrame interface to cppEDM. 
+A Pure Python implementation of EDM tools intended for code and algorithm development.  Production EDM tools are in [cppEDM](https://github.com/SugiharaLab/cppEDM).  The Python [EDM package](https://pypi.org/project/EDM-SugiharaLab/) provides a Pandas DataFrame interface to cppEDM. 
 
 Functionality is similar to the R implementation [rEDM](https://cran.r-project.org/web/packages/rEDM/index.html) by Ye et. al. See the [rEDM vignette](https://cran.r-project.org/web/packages/rEDM/vignettes/rEDM-tutorial.html) for a lucid introduction to EDM. 
 
