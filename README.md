@@ -97,7 +97,7 @@ Convergent cross mapping on anchovy and sea surface temperature data from [rEDM]
 
 ---
 ## Command line arguments
-pyEDM is coded in a functional paradigm for ease of understanding and use.  One exception is the command line argument parser.  The Python `ArgumentParser` class from the `argparse` module is used with all parameters stored in a namespace object: `args`.
+devEDM is coded in a functional paradigm for ease of understanding and use.  One exception is the command line argument parser.  The Python `ArgumentParser` class from the `argparse` module is used with all parameters stored in a namespace object: `args`.
 
 Command line options for `Embed.py Predict.py EmbedDimension.py PredictDecay.py SMapNL.py Multiview.py CCM.py`:
 
