@@ -109,12 +109,13 @@ Option|Long Option       |Description
   -l  | --library        | Library start/stop indices.
   -E  | --EmbedDimension | Embedding dimension.
   -k  | --knn            | Number of nearest neighbors.
-  -N  | --noNeighborLimit| Don't limit neighbors based on Tp.
   -T  | --Tp             | Forecast interval (0 default).
   -t  | --theta          | S-Map local weighting exponent (0 default).
-  -j  | --jacobians      | S-Map Jacobian columns, list of pairs.
+  -x  | --exclusionRadius| Prediction vector exclusion radius (0 rows default).
+  -N  | --noNeighborLimit| Don't limit neighbors based on Tp.
   -svd| --SVDLeastSquares| Use SVD least squares in S-Map.
   -sig| --SVDSignificance| S-Map SVD significance (10^-5 default).
+  -H  | --hessians       | S-Map Hessian and tangent columns, list of pairs.
   -tr | --TikhonovAlpha  | Tikhonov regularisation initial alpha in S-Map SVD.
   -en | --ElasticNetAlpha| Elastic Net alpha in S-Map.
   -M  | --multiview      | Multiview ensemble size (sqrt(m) default).
@@ -134,6 +135,7 @@ Option|Long Option       |Description
   -oe | --outputEmbed    | Output embedded data file.
   -fs | --figureSize     | Figure size (default [5, 3]).
   -P  | --plot           | Show plot(s).
+  -PT | --plotTitle      | Plot title.
   -PX | --plotXLabel     | Plot x-axis label.
   -PY | --plotYLabel     | Plot y-axis label.
   -PD | --plotDate       | Time values are pyplot datetime numbers.
@@ -144,6 +146,6 @@ Option|Long Option       |Description
 
 ---
 ## Notes
-SMapProjection() should be called with libraryMatrix and predictMatrix that have columns explicity correspondng to dimensions E. This means that if a multivariate data set is used, it should Not be called with an embedding from EmbedData() since EmbedData() will add lagged coordinates for each variable.  These extra columns will then not correspond to the intended dimensions in the matrix inversion and prediction reconstruction.  In this case, use the -e (embedded) flag so that the -c (columns) selected correspond to the proper dimension.
+SMapProjection() should be called with libraryMatrix and predictMatrix that have columns explicity correspondng to dimensions E. This means that if a multivariate data set is used, it should Not be called with an embedding from EmbedData() since EmbedData() will add lagged coordinates for each variable.  These extra columns will not correspond to the intended dimensions in the matrix inversion and prediction reconstruction.  In this case, use the -e (embedded) flag so that the -c (columns) selected correspond to the proper dimension.
 
-Hessian of intra-variable S-Map coefficients can be stored with the -j command.  Keep in mind that the S-Map coefficients themselves are representations of the phase-space variable Jacobians with respect to time ∂C(t+1)/∂C(t) and the other variables ∂Cx(t+1)/∂Cy(t).
+Hessian of intra-variable S-Map coefficients can be plotted and stored with the -H option.  Keep in mind that S-Map coefficients are estimates of the phase-space variable Jacobians with respect to time ∂C(t+1)/∂C(t) and the other variables ∂Cx(t+1)/∂Cy(t).

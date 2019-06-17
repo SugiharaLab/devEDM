@@ -179,11 +179,15 @@ def EmbedDimensions( args, source = Source.Python ):
         ax.plot( E_rho.keys(), E_rho.values(),
                  label = 'Predictions_t(+{0:d})'.format( args.Tp ),
                  color='blue', linewidth = 3 )
-        
+
+        if args.plotTitle is not None :
+            title = args.plotTitle
+        else:
+            title = args.inputFile + ' Tp=' + str( args.Tp )
+            
         ax.set( xlabel = 'Embedding Dimension',
                 ylabel = 'Prediction Skill' + r' $\rho$',
-                title  = args.inputFile +\
-                         ' Tp=' + str( args.Tp ) )
+                title  = title )
         plt.show()
 
     if source == Source.Jupyter :
@@ -289,10 +293,14 @@ def PredictDecays( args, source = Source.Python ):
                  label = 'Predictions_t(+{0:d})'.format( args.Tp ),
                  color='blue', linewidth = 3 )
         
+        if args.plotTitle is not None :
+            title = args.plotTitle
+        else:
+            title = args.inputFile + ' E=' + str( args.E )
+            
         ax.set( xlabel = 'Forecast time Tp',
                 ylabel = 'Prediction Skill' + r' $\rho$',
-                title  = args.inputFile +\
-                         ' E=' + str( args.E ) )
+                title  = title )
         plt.show()
 
     if source == Source.Jupyter :
@@ -411,10 +419,15 @@ def SMapNL( args, data = None, colNames = None, target = None, thetas = None,
                  label = 'Predictions_t(+{0:d})'.format( args.Tp ),
                  color='blue', linewidth = 3 )
         
+        if args.plotTitle is not None :
+            title = args.plotTitle
+        else:
+            title = args.inputFile + ' Tp=' + str( args.Tp ) +\
+                    ' E=' + str( args.E )
+            
         ax.set( xlabel = 'S Map Localization θ',
                 ylabel = 'Prediction Skill' + r' $\rho$',
-                title  = args.inputFile + ' Tp=' + str( args.Tp ) +\
-                         ' E=' + str( args.E ) )
+                title  = title )
         plt.show()
 
     if source == Source.Jupyter :
@@ -614,13 +627,18 @@ def Multiview( args, source = Source.Python ):
                 ax.plot( multiview_out[ :, 0 ], M[ :, col ],
                          label = combo_sort[col], linewidth = 2 )
         
+        if args.plotTitle is not None :
+            title = args.plotTitle
+        else:
+            title = "Multiview  " + args.inputFile +\
+                    ' Tp=' + str( args.Tp )        +\
+                    ' E='  + str( args.E )         +\
+                     r' $\rho$=' + str( round( rho, 2 ) )
+            
         ax.legend()
         ax.set( xlabel = args.plotXLabel,
                 ylabel = args.plotYLabel,
-                title  = "Multiview  " + args.inputFile +\
-                         ' Tp=' + str( args.Tp ) +\
-                         ' E='  + str( args.E ) + r' $\rho$=' +\
-                str( round( rho, 2 ) ) )
+                title  = title )
         plt.show()
 
     if source == Source.Jupyter :
@@ -786,10 +804,14 @@ def CCM( args, source = Source.Python ):
         plt.axhline( y = 0, linewidth = 1 )
         ax.legend()
         
+        if args.plotTitle is not None :
+            title = args.plotTitle
+        else:
+            title = args.inputFile + '  E=' + str( args.E  )
+            
         ax.set( xlabel = 'Library Size',
                 ylabel = "Cross map correlation " + r' $\rho$',
-                title  = args.inputFile +\
-                '  E=' + str( args.E  ) )
+                title  = title )
         plt.show()
         
     if source == Source.Jupyter :
@@ -885,11 +907,13 @@ def CrossMap( args ) :
             #----------------------------------------------------------
             neighbors, distances = CCMGetNeighbors( Distances, lib_i, args )
 
-            predictions = SimplexProjection( libraryMatrix[ lib_i, : ],
-                                             target       [ lib_i ],
-                                             neighbors,
-                                             distances,
-                                             args )
+            predictions, const_predict = \
+                SimplexProjection( libraryMatrix[ lib_i, : ],
+                                   target       [ lib_i ],
+                                   target       [ lib_i ], # const_target NA
+                                   neighbors,
+                                   distances,
+                                   args )
 
             rho, rmse, mae = ComputeError( target[ lib_i ], predictions )
 

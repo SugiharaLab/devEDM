@@ -1,5 +1,6 @@
 # Python distribution modules
 import sys
+from   os import environ
 from   collections     import OrderedDict
 from   multiprocessing import Pool
 from   copy            import deepcopy
@@ -14,6 +15,7 @@ from   matplotlib.dates import num2date
 # Patch sys.path so local modules are found in ../
 # Alternative is to set the JUPYTER_PATH environment variable 
 sys.path.append("../")
+environ["JUPYTER_PATH"] = "../"
 import Methods
 from   ArgParse import AdjustArgs, ParseCmdLine
 from   EDM      import ReadData, ReadEmbeddedData, EmbedData, Prediction, \

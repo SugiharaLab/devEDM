@@ -103,6 +103,11 @@ def Prediction( embedding, colNames, target, args ):
         Observations = target[ args.prediction[0]:args.prediction[-1]:1 ]
         target       = target[ args.library[0]   :args.library[-1]   :1 ]
 
+    # const_predict is a non "predictor": X(t) + Tp = X(t), setup const_target
+    const_target = np.roll( Observations, args.Tp )
+    if args.Tp > 0 :
+        const_target[ 0:args.Tp ] = np.nan
+
     #----------------------------------------------------------
     # k_NN nearest neighbors
     #----------------------------------------------------------
@@ -141,17 +146,19 @@ def Prediction( embedding, colNames, target, args ):
             print( "Simplex projection on " + str( args.E ) +\
                    " dimensions of " + args.inputFile + " Tp="+str( args.Tp ))
         
-        Predictions = SimplexProjection( libraryMatrix, target,
-                                         neighbors, distances, args )
+        Predictions, ConstPredict = SimplexProjection( libraryMatrix,
+                                                       target, const_target,
+                                                       neighbors, distances,
+                                                       args )
     elif 'smap' in args.method.lower():
         if args.verbose :
             print( "S-Map projection on " + str( args.E ) +\
                    " dimensions of " + args.inputFile + " Tp=" +\
                    str( args.Tp ) + " θ=" + str( args.theta ) )
         
-        Predictions, Coeff, Jacobians, Tangents = \
+        Predictions, ConstPredict, Coeff, Hessians, Tangents = \
             SMapProjection( libraryMatrix, predictionMatrix,
-                            target, neighbors,
+                            target, const_target, neighbors,
                             distances, args )
 
     else :
@@ -189,12 +196,12 @@ def Prediction( embedding, colNames, target, args ):
             Coeff          = np.append( Coeff, forecast_Coeff, axis = 0 )
             Coeff[ 0 : args.Tp, : ] = np.full( Coeff.shape[1], np.nan )
 
-            if len( args.jacobians ):
-                # Extend and shift Smap Jacobians, insert nan at beginning
-                forecast_Jacob = Jacobians[ (N_pred - args.Tp) : N_pred, : ]
-                Jacobians      = np.roll( Jacobians, args.Tp, axis = 0 )
-                Jacobians      = np.append(Jacobians, forecast_Jacob, axis = 0)
-                Jacobians[0 : args.Tp, :] = np.full(Jacobians.shape[1], np.nan)
+            if len( args.hessians ):
+                # Extend and shift Smap Hessians, insert nan at beginning
+                forecast_Jacob = Hessians[ (N_pred - args.Tp) : N_pred, : ]
+                Hessians       = np.roll( Hessians, args.Tp, axis = 0 )
+                Hessians       = np.append(Hessians, forecast_Jacob, axis = 0)
+                Hessians[0 : args.Tp, :] = np.full(Hessians.shape[1], np.nan)
 
                 forecast_Tangents = Tangents[ (N_pred - args.Tp) : N_pred, : ]
                 Tangents          = np.roll( Tangents, args.Tp, axis = 0 )
@@ -220,16 +227,16 @@ def Prediction( embedding, colNames, target, args ):
         for col in range( args.E + 1 ): # C0,C1,C2,...
             coef_header = coef_header + ( 'C{:d},'.format( col ) )
         
-        if len( args.jacobians ) :
-            # Append jacobian and tangent columns to smap_output
-            smap_output = np.hstack( ( smap_output, Jacobians, Tangents ) )
+        if len( args.hessians ) :
+            # Append hessian and tangent columns to smap_output
+            smap_output = np.hstack( ( smap_output, Hessians, Tangents ) )
             
-            # Append Jacobian labels to header
-            for pair in args.jacobians :
+            # Append Hessian labels to header
+            for pair in args.hessians :
                 coef_header = coef_header + \
                               ( '∂C{:d}/∂C{:d},'.format( pair[0], pair[1] ) )
             # Append Tangents labels to header
-            for pair in args.jacobians :
+            for pair in args.hessians :
                 coef_header = coef_header + \
                   ( 'C{:d}(∂/∂C{:d})+C{:d}(∂/∂C{:d}),'.format( pair[0],
                                                                pair[0],
@@ -242,11 +249,14 @@ def Prediction( embedding, colNames, target, args ):
                     delimiter = ',', header = coef_header, comments = '' )
             
     # Estimate correlation coefficient on observed : predicted data
-    rho, rmse, mae = ComputeError( Observations, Predictions )
+    rho, rmse, mae = ComputeError( Observations, Predictions  )
+    rho_const, rmse_const, mae_const = ComputeError(Observations, ConstPredict)
 
     if args.verbose :
         print( ("ρ {0:5.3f}  RMSE {1:5.3f}  "
                "MAE {2:5.3f}").format( rho, rmse, mae ) )
+        print( ("ρ_const {0:5.3f}  RMSE_const {1:5.3f}  "
+               "MAE_const {2:5.3f}").format(rho_const, rmse_const, mae_const))
     
     if args.Debug:
         print( '   Time     Data      Prediction' )
@@ -272,12 +282,17 @@ def Prediction( embedding, colNames, target, args ):
                  color='red',  linewidth = 2 )
         ax.legend()
         
+        if args.plotTitle is not None :
+            title = args.plotTitle
+        else:
+            title = args.inputFile + '  E=' + str( args.E  ) +\
+                    ' Tp=' + str( args.Tp )                  +\
+                    r' $\rho$=' + str( round( rho, 3 ) )
+        
         ax.set( xlabel = args.plotXLabel,
                 ylabel = args.plotYLabel,
-                title  = args.inputFile +\
-                         '  E=' + str( args.E  ) +\
-                         ' Tp=' + str( args.Tp ) +\
-                         r' $\rho$=' + str( round( rho, 3 ) ) )
+                title  = title )
+        
         plt.show( block = block )
 
         #-------------------------------------------------------
@@ -306,29 +321,34 @@ def Prediction( embedding, colNames, target, args ):
 
             ax2[ args.E ].set( xlabel = args.plotXLabel )
             
+            if args.plotTitle is not None :
+                title = args.plotTitle
+            else:
+                title = args.inputFile                    +\
+                        '  E=' + str( args.E  )           +\
+                        ' Tp=' + str( args.Tp )           +\
+                        r' $\theta$=' + str( args.theta ) +\
+                        r' $\rho$=' + str( round( rho, 3 ) )
+                
             ax2[ 0 ].set( ylabel = args.plotYLabel,
-                          title  = args.inputFile +\
-                                   '  E=' + str( args.E  ) +\
-                                   ' Tp=' + str( args.Tp ) +\
-                                  r' $\theta$=' + str( args.theta ) +\
-                                  r' $\rho$=' + str( round( rho, 3 ) ) )
+                          title  = title )
 
             #-------------------------------------------------------
-            # Plot S-Map Jacobians and Tangents
-            if len( args.jacobians ) :
-                # Note that ax3 is an array of len(args.jacobians) * 2
-                nJacobians = len(args.jacobians)
-                fig3, ax3 = plt.subplots( nrows = nJacobians * 2,
+            # Plot S-Map Hessians and Tangents
+            if len( args.hessians ) :
+                # Note that ax3 is an array of len(args.hessians) * 2
+                nHessians = len(args.hessians)
+                fig3, ax3 = plt.subplots( nrows = nHessians * 2,
                                           ncols = 1, sharex = True,
                                           figsize = ( args.figureSize[0],
                                                       args.figureSize[0] ),
                                           dpi = 150 )
 
-                for i, f in zip( range( nJacobians ),
-                                 range( 0, nJacobians * 2, 2 ) ) :
-                    pair = args.jacobians[ i ]
+                for i, f in zip( range( nHessians ),
+                                 range( 0, nHessians * 2, 2 ) ) :
+                    pair = args.hessians[ i ]
                         
-                    ax3[f].plot( Time, Jacobians[ :, i ],
+                    ax3[f].plot( Time, Hessians[ :, i ],
                                  label='S-Map ∂C{:d}/∂C{:d}'.format(pair[0],
                                                                     pair[1]),
                                  linewidth = 2, color = plotColors[f] )
@@ -343,14 +363,19 @@ def Prediction( embedding, colNames, target, args ):
 
                     ax3[f+1].legend()
 
-                ax3[ nJacobians * 2 - 1 ].set( xlabel = args.plotXLabel )
+                ax3[ nHessians * 2 - 1 ].set( xlabel = args.plotXLabel )
             
+                if args.plotTitle is not None :
+                    title = args.plotTitle
+                else:
+                    title = args.inputFile                    +\
+                            '  E=' + str( args.E  )           +\
+                            ' Tp=' + str( args.Tp )           +\
+                            r' $\theta$=' + str( args.theta ) +\
+                            r' $\rho$=' + str( round( rho, 3 ) )
+                
                 ax3[ 0 ].set( ylabel = args.plotYLabel,
-                              title  = args.inputFile +\
-                              '  E=' + str( args.E  ) +\
-                              ' Tp=' + str( args.Tp ) +\
-                              r' $\theta$=' + str( args.theta ) +\
-                              r' $\rho$=' + str( round( rho, 3 ) ) )
+                              title  = title )
                 
         plt.show()
 
@@ -359,7 +384,7 @@ def Prediction( embedding, colNames, target, args ):
 #----------------------------------------------------------------------------
 # 
 #----------------------------------------------------------------------------
-def SMapProjection( libraryMatrix, predictMatrix, target,
+def SMapProjection( libraryMatrix, predictMatrix, target, const_target,
                     neighbors, distances, args ):
     '''
     Sequential Locally Weighted Global Linear Maps.
@@ -388,10 +413,11 @@ def SMapProjection( libraryMatrix, predictMatrix, target,
     if N_row != nRow( distances ) :
         raise RuntimeError( "SMapProjection() Input row dimension mismatch." )
 
-    predictions  = np.zeros( N_row )
-    coefficients = np.full( ( N_row, args.E + 1 ), np.nan )
-    jacobians    = None
-    tangents     = None
+    predictions   = np.zeros( N_row )
+    const_predict = np.zeros( N_row )
+    coefficients  = np.full( ( N_row, args.E + 1 ), np.nan )
+    hessians      = None
+    tangents      = None
 
     for row in range( N_row ) :
         
@@ -449,28 +475,37 @@ def SMapProjection( libraryMatrix, predictMatrix, target,
 
         predictions [ row ]    = prediction
         coefficients[ row, : ] = C
+        
+        # non "predictor" X(t) + Tp = X(t)
+        const_predict[ row ] = const_target[ row ]
+
+        # constant weight predictor
+        # const_prediction = C[ 0 ] # predictMatrix[ row, ].mean()
+        # for e in range( 1, args.E + 1 ) :
+        #     const_prediction = const_prediction + predictMatrix[ row, e ]
+        # const_predict[ row ] = const_prediction / ( args.E + 1 )
 
     #----------------------------------------------------------
-    # Jacobians
+    # Hessians
     #----------------------------------------------------------
-    if len( args.jacobians ) :
+    if len( args.hessians ) :
         # Partial derivatives of S-Map coefficients
-        # args.jacobians is a list of pairs of smap coeff column indices
+        # args.hessians is a list of pairs of smap coeff column indices
         # index 0 refers to the smap bias term, smap coeff from 1 to E + 1
         # are the coefficients for the prediction data/embedding columns
 
-        # Note that args.jacobians is a list of pairs (tuples)
-        jacobians = np.zeros( ( N_row, len( args.jacobians ) ) )
-        tangents  = np.zeros( ( N_row, len( args.jacobians ) ) )
+        # Note that args.hessians is a list of pairs (tuples)
+        hessians = np.zeros( ( N_row, len( args.hessians ) ) )
+        tangents = np.zeros( ( N_row, len( args.hessians ) ) )
         
-        for pair, col in zip( args.jacobians, range( len(args.jacobians) ) ) :
+        for pair, col in zip( args.hessians, range( len(args.hessians) ) ) :
             c1 = coefficients[ :, pair[0] ]
             c2 = coefficients[ :, pair[1] ]
 
-            # Jacobians
+            # Hessians
             dc1 = np.gradient( c1 )
             dc2 = np.gradient( c2 )
-            jacobians[ :, col ] = dc1 / dc2
+            hessians[ :, col ] = dc1 / dc2
 
             # Directional Derivatives (manifold tangent)
             tangents[ :, col ] = c1 * dc1  + c2 * dc2
@@ -478,11 +513,11 @@ def SMapProjection( libraryMatrix, predictMatrix, target,
     if args.Debug:
         print( "SMapProjection() predictions:" )
         print( np.round( predictions[ 0:10 ], 4 ) )
-        print( "SMapProjection() jacobians:" )
-        if args.jacobians:
-            print( np.round( jacobians  [ 0:5, : ], 4 ) )
+        print( "SMapProjection() hessians:" )
+        if args.hessians:
+            print( np.round( hessians  [ 0:5, : ], 4 ) )
 
-    return ( predictions, coefficients, jacobians, tangents )
+    return ( predictions, const_predict, coefficients, hessians, tangents )
     
 #----------------------------------------------------------------------------
 #
@@ -625,7 +660,7 @@ def SVD( A, b, args ) :
 #----------------------------------------------------------------------------
 # 
 #----------------------------------------------------------------------------
-def SimplexProjection( libraryMatrix, target,
+def SimplexProjection( libraryMatrix, target, const_target,
                        neighbors, distances, args ) :
     '''
     Each row of neighbors, distances corresponds to one prediction vector.
@@ -639,15 +674,15 @@ def SimplexProjection( libraryMatrix, target,
         print( "neighbors:" )
         print( neighbors )
 
-        
     library_N_row = nRow( libraryMatrix ) # Observation Library subset
     N_row         = nRow( neighbors     ) # Prediction k_NN list
     
     if N_row != nRow( distances ) :
         raise RuntimeError( "SimplexProjection() Neighbor row mismatch." )
 
-    min_weight  = 1E-6
-    predictions = np.zeros( N_row )
+    min_weight    = 1E-6
+    predictions   = np.zeros( N_row )
+    const_predict = np.zeros( N_row )
     
     for row in range( N_row ) :
 
@@ -702,11 +737,17 @@ def SimplexProjection( libraryMatrix, target,
         # Prediction is average of weighted library projections
         predictions[ row ] = np.sum( weights * lib_target ) / np.sum( weights )
 
+        # non "predictor" X(t) + Tp = X(t)
+        const_predict[ row ] = const_target[ row ]
+        
+        # constant weight predictor
+        # const_predict[ row ] = lib_target.mean()
+
     if args.Debug:
         print( "SimplexProjection() Predictions: " )
         print( np.round( predictions[ 0:10 ], 4 ) )
 
-    return predictions
+    return ( predictions, const_predict )
     
 #----------------------------------------------------------------------------
 # 
@@ -745,7 +786,10 @@ def FindNeighbors( libraryMatrix, predictionMatrix, args ) :
     if len( timeIntersection ) :
         if args.verbose or args.warnings:
             print( 'FindNeighbors(): Degenerate library and prediction data.' )
-        
+
+    # Time interval for exclusionRadius
+    deltaT = ( timeLib[1] - timeLib[0] ) * args.exclusionRadius
+            
     # Matrix to hold libraryMatrix row indices
     # One row for each prediction vector, k_NN columns for each index
     neighbors = np.zeros( (prediction_N_row, args.k_NN), dtype = int )
@@ -774,6 +818,11 @@ def FindNeighbors( libraryMatrix, predictionMatrix, args ) :
                            str( lib_row ), ' and pred_row ', str( pred_row ) )
                 continue
 
+            # Apply temporal exclusion radius
+            if args.exclusionRadius :
+                if abs( timeLib[ lib_row ] - timePred[ pred_row ] ) <= deltaT :
+                    continue
+
             # If this lib_row + args.Tp >= library_N_row, then this neighbor
             # would be outside the library, keep looking if noNeighborLimit
             if lib_row + args.Tp >= library_N_row :
@@ -792,9 +841,12 @@ def FindNeighbors( libraryMatrix, predictionMatrix, args ) :
                 k_NN_distances[ max_i ] = d_i      # Save the value
 
         if np.amax( k_NN_distances ) > 1E29 :
-            raise RuntimeError( "FindNeighbors() Library is too small to " +\
-                                "resolve " + str( args.k_NN ) + " k_NN "   +\
-                                "neighbors." )
+            errMsg = "FindNeighbors() Library is too small to " +\
+                     "resolve " + str( args.k_NN ) + " k_NN neighbors."
+            if args.exclusionRadius:
+                errMsg = errMsg + " Try to reduce exclusion radius."
+                
+            raise RuntimeError( errMsg )
         
         # Check for ties.  JP: haven't found any so far...
         if len( k_NN_neighbors ) != len( np.unique( k_NN_neighbors ) ) :

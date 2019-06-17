@@ -52,10 +52,15 @@ def ParseCmdLine():
                         action = 'store', default = 0,
                         help = 'S-Map local weighting exponent (0 default).')
 
-    parser.add_argument('-j', '--jacobians', nargs = '+',
-                        dest   = 'jacobians',
+    parser.add_argument('-x', '--exclusionRadius',
+                        dest   = 'exclusionRadius', type = int, 
+                        action = 'store', default = 0,
+                        help = 'Time vector exclusion radius (0 default).')
+
+    parser.add_argument('-H', '--hessians', nargs = '+',
+                        dest   = 'hessians',
                         action = 'store', default = [],
-                        help = 'S-Map Jacobian columns, list of pairs.')
+                        help = 'S-Map Coef Hessian columns, list of pairs.')
 
     parser.add_argument('-svd', '--SVDLeastSquares',
                         dest   = 'SVDLeastSquares',
@@ -164,6 +169,11 @@ def ParseCmdLine():
                         action = 'store_true', default = False,
                         help = 'Show plot.')
     
+    parser.add_argument('-PT', '--plotTitle',
+                        dest   = 'plotTitle', type = str,
+                        action = 'store', default = None,
+                        help = 'Plot title.')
+    
     parser.add_argument('-PX', '--plotXLabel',
                         dest   = 'plotXLabel', type = str,
                         action = 'store', default = 'Time ()',
@@ -223,22 +233,22 @@ def AdjustArgs( args ):
                    " -e (embedded) data input to ensure data/dimension" +\
                    " correspondance." )
 
-        # S-Map coefficient columns for jacobians start at 1 since the 0th
+        # S-Map coefficient columns for hessians start at 1 since the 0th
         # column is the S-Map linear prediction bias term
-        if len( args.jacobians ) :
-            if "0" in args.jacobians :            
+        if len( args.hessians ) :
+            if "0" in args.hessians :            
                 raise RuntimeError( "ParseCmdLine() S-Map coefficient columns"+\
-                                    " for jacobians can not use column 0." )
+                                    " for hessians can not use column 0." )
 
         # Must be pairs of coefficient columns
-        if len( args.jacobians ) % 2 :
+        if len( args.hessians ) % 2 :
             raise RuntimeError( "ParseCmdLine() S-Map coefficient columns " +\
-                                "for jacobians must be in pairs." )
+                                "for hessians must be in pairs." )
 
-        # Convert args.jacobians into a list of int pairs (tuples)
-        args.jacobians = [ ( int( args.jacobians[i]     ),
-                             int( args.jacobians[i + 1] ) )
-                           for i in range( 0, len( args.jacobians ), 2 ) ]
+        # Convert args.hessians into a list of int pairs (tuples)
+        args.hessians = [ ( int( args.hessians[i]     ),
+                            int( args.hessians[i + 1] ) )
+                           for i in range( 0, len( args.hessians ), 2 ) ]
 
         # SVD, Tikhonov and ElasticNet are mutually exclusive
         if ( args.TikhonovAlpha and args.ElasticNetAlpha ) or \
