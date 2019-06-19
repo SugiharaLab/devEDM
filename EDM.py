@@ -1135,9 +1135,9 @@ def EmbedData( args, data = None, colNames = None ):
     !!! This Δi requires that the data column indices are j=1,2...E
     We use column j=0 for the observation time/index values.
 
-    !!! The saved emdedding will be Δi = (E - 1)τ rows less than the 
+    !!! The saved emdedding will be Δrow = (E - 1)τ rows less than the 
     original timeseries, coordinates with missing data are deleted.
-    If time delays are used then the top Δi rows are deleted, if forward
+    If time delays are used then the top Δrow are deleted, if forward
     times (-f --forwardTau) are specified, then bottom rows are deleted.
 
     Note that the embedding matrix columns are processed according to
@@ -1177,6 +1177,7 @@ def EmbedData( args, data = None, colNames = None ):
                                 str( len( colNames ) ) + ")" )
         
     N_row, N_col = data.shape
+    delta_row    = (args.E - 1) * args.tau
 
     if N_col < 2 :
         raise RuntimeError( "EmbedData() at least 2 columns required: " +\
@@ -1203,7 +1204,6 @@ def EmbedData( args, data = None, colNames = None ):
         
             i_targetColumn = D[ args.target ]
         
-        delta_row = (args.E - 1) * args.tau
         if args.forwardTau :
             # Ignore bottom delta_row
             target = data[ 0:(N_row - delta_row), i_targetColumn ]
@@ -1221,7 +1221,9 @@ def EmbedData( args, data = None, colNames = None ):
     # assumes that the first (j=0) column is 'time' and the second
     # (j=1) column is the prediction variable (data).
     
+    #----------------------------------------------------------
     # Process each column specified in args.columns
+    #----------------------------------------------------------
     for embedColumn in args.columns :
         # Zero-offset index to data column
         i_embedColumn = None
@@ -1255,33 +1257,33 @@ def EmbedData( args, data = None, colNames = None ):
         if args.forwardTau :
             # Embed as t + tau
             for j in range( 2, args.E + 1 ) :
-                delta_row = ( j - 1 ) * args.tau
+                delta_row_ = ( j - 1 ) * args.tau
 
-                m[ 0 : (N_row - delta_row) : 1, j ] =\
-                   data[ delta_row : N_row : 1, i_embedColumn ]
+                m[ 0 : (N_row - delta_row_) : 1, j ] =\
+                   data[ delta_row_ : N_row : 1, i_embedColumn ]
     
-            # Delete the Δi = (E - 1)τ bottom rows that have partial data
+            # Delete the Δrow = (E - 1)τ bottom rows that have partial data
             # np.s_[] is the slice operator,  axis = 0 : delete row dimension
-            del_row = N_row - (args.E - 1) * args.tau
+            del_row = N_row - delta_row
             m = np.delete( m, np.s_[ del_row : N_row : 1 ], 0 )
 
         else :
             # Embed as t - tau
             for j in range( 2, args.E + 1 ) :
-                delta_row = ( j - 1 ) * args.tau
+                delta_row_ = ( j - 1 ) * args.tau
 
-                m[ delta_row : N_row : 1, j ] =\
-                   data[ 0 : N_row - delta_row : 1, i_embedColumn ]
+                m[ delta_row_ : N_row : 1, j ] =\
+                   data[ 0 : N_row - delta_row_ : 1, i_embedColumn ]
     
-            # Delete the Δi = (E - 1)τ top rows that have partial data
+            # Delete the Δrow = (E - 1)τ top rows that have partial data
             # np.s_[] is the slice operator,  axis = 0 : delete row dimension
-            del_row = (args.E - 1) * args.tau
-            m = np.delete( m, np.s_[ 0 : del_row : 1 ], 0 )
+            m = np.delete( m, np.s_[ 0 : delta_row : 1 ], 0 )
 
         embeddings[ embedColumn ] = m
 
     #----------------------------------------------------------
     # Combine the possibly multiple embeddings into one matrix
+    #----------------------------------------------------------
     first_key = list( embeddings.keys() )[0]
     
     for key in embeddings.keys() :
@@ -1301,6 +1303,17 @@ def EmbedData( args, data = None, colNames = None ):
             else:
                 header.append( key + '(t-{0:d}),'.format(tau) )
 
+    # Adjust args.library and args.prediction for the deleted rows
+    if args.forwardTau :
+        # Rows deleted from the bottom
+        maxRow = N_row - delta_row
+        args.prediction = [ min(maxRow, x + delta_row) for x in args.prediction ]
+        args.library    = [ min(maxRow, x + delta_row) for x in args.library    ]
+    else :
+        # Rows deleted from the top
+        args.prediction = [ max(0, x - delta_row) for x in args.prediction ]
+        args.library    = [ max(0, x - delta_row) for x in args.library    ]
+
     # Format header list into a string for savetxt 
     # and Header list with the trailing ',' stripped
     header_str = ''.join(header)[ 0 : -1 ] # join and remove trailing ,
@@ -1311,8 +1324,9 @@ def EmbedData( args, data = None, colNames = None ):
         print( header_str )
         print( M[ 0:5, : ] )
     
-    #------------------------------------------------------------------
+    #----------------------------------------------------------
     # Write output
+    #----------------------------------------------------------
     if args.outputEmbed:
         np.savetxt( args.path + args.outputEmbed, M, fmt = '%.6f',
                     delimiter = ',', header = header_str, comments = '' )
