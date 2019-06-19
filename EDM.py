@@ -129,7 +129,7 @@ def Prediction( embedding, colNames, target, args ):
             if args.noNeighborLimit :
                 args.k_NN = libraryMatrix.shape[0]
             else :
-                args.k_NN = libraryMatrix.shape[0] - args.Tp
+                args.k_NN = libraryMatrix.shape[0] - args.Tp * ( args.E + 1 )
                 
             if args.verbose:
                 print( "Prediction() Set k_NN = " + str( args.k_NN ) +\
