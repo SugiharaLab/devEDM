@@ -103,7 +103,7 @@ def Prediction( embedding, colNames, target, args ):
         Observations = target[ args.prediction[0]:args.prediction[-1]:1 ]
         target       = target[ args.library[0]   :args.library[-1]   :1 ]
 
-    # const_predict is a non "predictor": X(t) + Tp = X(t), setup const_target
+    # const_predict is a non "predictor": X(t + Tp) = X(t), setup const_target
     const_target = np.roll( Observations, args.Tp )
     if args.Tp > 0 :
         const_target[ 0:args.Tp ] = np.nan
@@ -476,7 +476,7 @@ def SMapProjection( libraryMatrix, predictMatrix, target, const_target,
         predictions [ row ]    = prediction
         coefficients[ row, : ] = C
         
-        # non "predictor" X(t) + Tp = X(t)
+        # non "predictor" X(t + Tp) = X(t)
         const_predict[ row ] = const_target[ row ]
 
         # constant weight predictor
@@ -737,7 +737,7 @@ def SimplexProjection( libraryMatrix, target, const_target,
         # Prediction is average of weighted library projections
         predictions[ row ] = np.sum( weights * lib_target ) / np.sum( weights )
 
-        # non "predictor" X(t) + Tp = X(t)
+        # non "predictor" X(t + Tp) = X(t)
         const_predict[ row ] = const_target[ row ]
         
         # constant weight predictor
