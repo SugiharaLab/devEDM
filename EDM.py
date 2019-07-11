@@ -1,5 +1,6 @@
 # Python distribution modules
 from collections import OrderedDict
+from copy        import deepcopy
 
 # Community modules
 import numpy as np
@@ -165,9 +166,9 @@ def Prediction( embedding, colNames, target, args ):
         raise RuntimeError( "Prediction() Invalid projection method: ",
                             args.method )
         
-    #----------------------------------------------------------
+    #--------------------------------------------------------------------
     # Output
-    #----------------------------------------------------------
+    #--------------------------------------------------------------------
     # If Tp > 0, offset predicted values by Tp to match observation times
     if args.Tp > 0:
         # Extend Time to accomodate the Tp projections
@@ -209,23 +210,43 @@ def Prediction( embedding, colNames, target, args ):
                                                axis = 0)
                 Tangents[0 : args.Tp, :] = np.full(Tangents.shape[1], np.nan)
 
+    #--------------------------------------------------------
     # Combine into one matrix, create header and write output
-    output = np.stack( ( Time, Observations, Predictions ), axis = -1 )
+    #--------------------------------------------------------
+    TimeOut = deepcopy( Time )
+
+    formatString = '%.4f'
+    if args.plotDate : # if Time is datetime convert to matplotlib datetime
+        TimeOut = num2date( Time )
+        formatString = [ '%s', '%.4f', '%.4f' ]
+        
+    output = np.stack( ( TimeOut, Observations, Predictions ), axis = -1 )
     header = 'Time,Data,Prediction_t(+{0:d})'.format( args.Tp )
     
     if args.outputFile:
-        np.savetxt( args.path + args.outputFile, output, fmt = '%.4f',
+        np.savetxt( args.path + args.outputFile, output, fmt = formatString,
                     delimiter = ',', header = header, comments = '' )
 
+    #--------------------------------------------------------
+    # SMap output 
+    #--------------------------------------------------------
     smap_output = None
     if args.outputSmapFile and 'smap' in args.method.lower() :
+
         # Combine Time, Coeff into one matrix
-        smap_output = np.hstack( ( Time.reshape(( Time.shape[0], 1 )), Coeff ) )
+        formatString = [ '%.4f' ]
+        if args.plotDate : 
+            formatString = [ '%s' ]
+            
+        TimeOutArray = np.array( TimeOut ) # Convert list to np.array
+        smap_output = np.hstack(
+            ( TimeOutArray.reshape(( TimeOutArray.shape[0], 1 )), Coeff ) )
         
         # Create .csv file header
         coef_header = 'Time,'
         for col in range( args.E + 1 ): # C0,C1,C2,...
             coef_header = coef_header + ( 'C{:d},'.format( col ) )
+            formatString.append( '%.4f' )
         
         if len( args.hessians ) :
             # Append hessian and tangent columns to smap_output
@@ -235,6 +256,8 @@ def Prediction( embedding, colNames, target, args ):
             for pair in args.hessians :
                 coef_header = coef_header + \
                               ( '∂C{:d}/∂C{:d},'.format( pair[0], pair[1] ) )
+                formatString.append( '%.4f' )
+                
             # Append Tangents labels to header
             for pair in args.hessians :
                 coef_header = coef_header + \
@@ -242,10 +265,12 @@ def Prediction( embedding, colNames, target, args ):
                                                                pair[0],
                                                                pair[1],
                                                                pair[1] ) )
+                formatString.append( '%.4f' )
 
         coef_header = coef_header[ 0 : -1 ] # remove trailing ,
         
-        np.savetxt( args.path + args.outputSmapFile, smap_output, fmt = '%.4f',
+        np.savetxt( args.path + args.outputSmapFile, smap_output,
+                    fmt = formatString,
                     delimiter = ',', header = coef_header, comments = '' )
             
     # Estimate correlation coefficient on observed : predicted data
@@ -268,10 +293,7 @@ def Prediction( embedding, colNames, target, args ):
             block = False # Plot two separate windows, don't block on first
         else:
             block = True
-
-        if args.plotDate :
-            Time = num2date( Time )
-        
+            
         #-------------------------------------------------------
         # Plot Observation and Prediction
         fig, ax = plt.subplots( 1, 1, figsize = args.figureSize, dpi = 150 )
