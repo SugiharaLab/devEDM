@@ -8,7 +8,7 @@ from itertools       import combinations
 import numpy as np
 import matplotlib.pyplot as plt
 from   matplotlib.dates import num2date
-from   numpy.random     import randint, seed
+from   numpy.random     import choice, randint, seed
 
 # Local modules
 from ArgParse import ParseCmdLine
@@ -837,6 +837,14 @@ def CrossMap( args ) :
 
     # Range of CCM library indices
     start, stop, increment = args.libsize
+
+    if args.randomLib and not args.replacement :
+        # Sampling with replacement, validate lib_size
+        if stop > N_row :
+            raise RuntimeError( "CCM CrossMap() Random library with "   +\
+                                "replacement requires max lib_size "    +\
+                                str( stop ) + " less than or equal to " +\
+                                "N_row " + str( N_row ) )
     
     if args.randomLib :
         # Random samples from library with replacement
@@ -879,10 +887,16 @@ def CrossMap( args ) :
         for n in range( maxSamples ) :
 
             if args.randomLib :
-                # Uniform random sample of rows, with replacement
-                lib_i = randint( low  = 0,
-                                 high = N_row,
-                                 size = lib_size )
+                if args.replacement :
+                    # Uniform random sample of rows, with replacement
+                    lib_i = randint( low  = 0,
+                                     high = N_row,
+                                     size = lib_size )
+                else :
+                    # Uniform random sample of rows, without replacement
+                    lib_i = choice( a       = N_row,    # = np.arange(a)
+                                    size    = lib_size,
+                                    replace = False )
             else :
                 if lib_size >= N_row :
                     # library size exceeded, back down

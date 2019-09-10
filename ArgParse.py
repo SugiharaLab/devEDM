@@ -129,6 +129,12 @@ def ParseCmdLine():
                         action = 'store_true', default = False,
                         help = 'CCM random library samples enabled.')
 
+    parser.add_argument('-rp', '--replacement',
+                        dest   = 'replacement', 
+                        action = 'store_true', default = False,
+                        help = 'CCM random library with replacement: ' +\
+                               '(False default).')
+
     parser.add_argument('-S', '--seed',
                         dest   = 'seed', type = int, 
                         action = 'store',      default = None,

@@ -126,8 +126,9 @@ Option|Long Option       |Description
   -e  | --embedded       | Input data is an embedding.
   -L  | --libsize        | CCM Library size range [start, stop, incr].
   -s  | --subsample      | Number subsamples generated at each library.
-  -R  | --randomLib      | CCM random library samples enabled.
-  -S  | --seed           | CCM Random number generator seed: (None default).
+  -R  | --randomLib      | CCM random library samples enabled (False default).
+  -rp | --replacement    | CCM random samples with replacement (False default).
+  -S  | --seed           | CCM Random number generator seed (None default).
   -pa | --path           | Input & Output file path.
   -i  | --inputFile      | Input observation file.
   -o  | --outputFile     | Output prediction file.

@@ -127,7 +127,7 @@ def Test():
     else:
         # These values correspond to the rEDM test
         s = './CCM.py -i sardine_anchovy_sst.csv -c anchovy -r np_sst ' +\
-            '-E 3 -s 100 -L 10 80 10 -R -P'
+            '-E 3 -s 100 -L 10 80 10 -R -rp -P'
         try:
             run( s.split(), timeout = args.timeout  )
         except TimeoutExpired:
