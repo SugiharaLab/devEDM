@@ -715,9 +715,10 @@ def CCM( args, source = Source.Python ):
     the use of a process Pool. 
     
     Arguments: 
-    -L (libsize) specifies a list of library sizes [start, stop, increment]
-    -s (subsample) number of subsamples generated at each library size, if:
-    -R (replacement) subsample with replacement. 
+    -L  (libsize) specifies a list of library sizes [start, stop, increment]
+    -s  number of subsamples generated at each library size
+    -R  random subsamples
+    -rp subsample with replacement
 
     Simplex "Predictions" are made over the same data/embedding slices as
     the library so that -l and -p parameters have no meaning. 
@@ -841,7 +842,7 @@ def CrossMap( args ) :
     if args.randomLib and not args.replacement :
         # Sampling with replacement, validate lib_size
         if stop > N_row :
-            raise RuntimeError( "CCM CrossMap() Random library with "   +\
+            raise RuntimeError( "CCM CrossMap() Random library without "+\
                                 "replacement requires max lib_size "    +\
                                 str( stop ) + " less than or equal to " +\
                                 "N_row " + str( N_row ) )
