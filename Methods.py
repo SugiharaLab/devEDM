@@ -534,10 +534,10 @@ def Multiview( args, source = Source.Python ):
                                               Combo_rho.keys() ),
                                          reverse = True ) )
     
-    if args.Debug:
+    if args.verbose:
         print( "Multiview()  In sample sorted embeddings:" )
         print( 'Columns         ρ' )
-        for i in range( min( args.multiview, len( combo_sort ) ) ):
+        for i in range( len( combo_sort ) ):
             print(str( combo_sort[i] ) + "    " + str( round( rho_sort[i],4)))
     
     #---------------------------------------------------------------
