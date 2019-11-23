@@ -474,7 +474,7 @@ def SMapProjection( libraryMatrix, predictMatrix, target, const_target,
 
             A[ k, 0 ] = w[k]
             for j in range( 1, args.E + 1 ) :
-                A[ k, j ] = w[k] * predictMatrix[ row, j ]
+                A[ k, j ] = w[k] * libraryMatrix[ lib_row - args.Tp, j ]
 
         B = w * B
 
