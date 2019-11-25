@@ -82,8 +82,7 @@ Multivariable S-map prediction on three-species data from [rEDM](https://cran.r-
 ### Multiview ensemble simplex prediction
 Multiview simplex prediction on three-species data from [rEDM](https://cran.r-project.org/web/packages/rEDM/vignettes/rEDM-tutorial.html).  This corresponds to the rEDM multiview() functionality.
 ```
-./Multiview.py -i block_3sp.csv -E 3 -r x_t -c x_t y_t z_t 
--l 1 100 -p 101 200 -T 1 -P
+./Multiview.py -i block_3sp.csv -E 3 -r x_t -c x_t y_t z_t -l 1 100 -p 101 200 -T 1 -P
 ```
 ![Multiview.py example](./doc/MultiviewTentMap.png)
 
@@ -91,7 +90,7 @@ Multiview simplex prediction on three-species data from [rEDM](https://cran.r-pr
 ### Convergent cross mapping
 Convergent cross mapping on anchovy and sea surface temperature data from [rEDM](https://cran.r-project.org/web/packages/rEDM/vignettes/rEDM-tutorial.html).  This corresponds to the rEDM ccm() functionality.
 ```
-./CCM.py -i sardine_anchovy_sst.csv -c anchovy -r np_sst -E 3 -s 100 -L 10 80 10 -R -P
+./CCM.py -i sardine_anchovy_sst.csv -c anchovy -r np_sst -E 3 -s 100 -L 7 75 5 -R -P
 ```
 ![CCM.py example](./doc/CCM.png)
 
