@@ -105,9 +105,17 @@ def Rossler( args ):
                  V[ :, args.dimensions[1] ],
                  V[ :, args.dimensions[2] ] )
       
-      ax3D.set_xlabel( '$x_{0:d}$'.format( args.dimensions[0] ) )
-      ax3D.set_ylabel( '$x_{0:d}$'.format( args.dimensions[1] ) )
-      ax3D.set_zlabel( '$x_{0:d}$'.format( args.dimensions[2] ) )
+      ax3D.set_xlabel( '$R_{0:d}$'.format( args.dimensions[0]+1 ), fontsize=20 )
+      ax3D.set_ylabel( '$R_{0:d}$'.format( args.dimensions[1]+1 ), fontsize=20 )
+      ax3D.set_zlabel( '$R_{0:d}$'.format( args.dimensions[2]+1 ), fontsize=20 )
+
+      ax3D.xaxis.set_rotate_label( False ) 
+      ax3D.yaxis.set_rotate_label( False ) 
+      ax3D.zaxis.set_rotate_label( False ) 
+      ax3D.xaxis.set_tick_params( labelsize = 14 )
+      ax3D.yaxis.set_tick_params( labelsize = 14 )
+      ax3D.zaxis.set_tick_params( labelsize = 14 )
+      
       plt.show()
     
     #------------------------------------------------------------
@@ -209,7 +217,7 @@ def ParseCmdLine():
 
     args = parser.parse_args()
 
-    # Zero offset dimensions
+    # Zero offset dimensions (for 3D plot variables?)
     args.dimensions = [ d-1 for d in args.dimensions ]
 
     if len( args.jacobians ) :
