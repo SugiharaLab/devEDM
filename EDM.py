@@ -233,8 +233,10 @@ def Prediction( embedding, colNames, target, args ):
     smap_output = None
     if args.outputSmapFile and 'smap' in args.method.lower() :
 
+        smapFormat = '%.9f'
+        
         # Combine Time, Coeff into one matrix
-        formatString = [ '%.4f' ]
+        formatString = [ smapFormat ]
         if args.plotDate : 
             formatString = [ '%s' ]
             
@@ -246,7 +248,7 @@ def Prediction( embedding, colNames, target, args ):
         coef_header = 'Time,'
         for col in range( args.E + 1 ): # C0,C1,C2,...
             coef_header = coef_header + ( 'C{:d},'.format( col ) )
-            formatString.append( '%.4f' )
+            formatString.append( smapFormat )
         
         if len( args.hessians ) :
             # Append hessian and tangent columns to smap_output
@@ -256,7 +258,7 @@ def Prediction( embedding, colNames, target, args ):
             for pair in args.hessians :
                 coef_header = coef_header + \
                               ( '∂C{:d}/∂C{:d},'.format( pair[0], pair[1] ) )
-                formatString.append( '%.4f' )
+                formatString.append( smapFormat )
                 
             # Append Tangents labels to header
             for pair in args.hessians :
@@ -265,7 +267,7 @@ def Prediction( embedding, colNames, target, args ):
                                                                pair[0],
                                                                pair[1],
                                                                pair[1] ) )
-                formatString.append( '%.4f' )
+                formatString.append( smapFormat )
 
         coef_header = coef_header[ 0 : -1 ] # remove trailing ,
         
